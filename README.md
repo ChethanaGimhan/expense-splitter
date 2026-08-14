@@ -100,6 +100,10 @@ The Remove button is disabled with an explanation, and the expenses have to go f
 alternative — cascading the delete through their expenses — silently destroys data the user
 may not have meant to lose.
 
+**Names must be unique within a group.** Two people called "Alice" would be separate records
+and the arithmetic would stay correct, but Settle Up would read "Alice pays Alice" and look
+broken. Duplicates are rejected with a message rather than silently allowed.
+
 **The leftover cent goes to the earliest participant.** Deterministic and reproducible,
 which matters in a money app. See "what I'd do next" for the trade-off.
 
