@@ -61,7 +61,29 @@ export default function ExpenseForm({
     );
     setAttempted(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editing, people.length]);
+  }, [editing]);
+
+  /**
+   * Keep the split selection in step with the group. New people join the split
+   * by default, people who are removed drop out of it, and the payer falls back
+   * to the first person in the group.
+   *
+   * This deliberately does not touch the description or the amount: adding
+   * someone to the group halfway through typing an expense used to reset the
+   * whole form and throw away what had been entered.
+   */
+  useEffect(() => {
+    if (editing) return;
+    setParticipantIds((current) => {
+      const chosen = new Set(current);
+      const stillInGroup = current.filter((id) => people.some((p) => p.id === id));
+      const newlyAdded = people.filter((p) => !chosen.has(p.id)).map((p) => p.id);
+      return [...stillInGroup, ...newlyAdded];
+    });
+    setPayerId((current) =>
+      people.some((p) => p.id === current) ? current : (people[0]?.id ?? ''),
+    );
+  }, [people, editing]);
 
   /**
    * The expense list sits below the form, so without this the page looks like
@@ -197,6 +219,7 @@ export default function ExpenseForm({
             <label>
               <input
                 type="radio"
+                name="split-mode"
                 checked={mode === 'equal'}
                 onChange={() => setMode('equal')}
               />
@@ -205,6 +228,7 @@ export default function ExpenseForm({
             <label>
               <input
                 type="radio"
+                name="split-mode"
                 checked={mode === 'exact'}
                 onChange={() => setMode('exact')}
               />
