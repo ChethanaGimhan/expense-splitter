@@ -70,6 +70,11 @@ export function validateExpense(expense: Expense): string | null {
   if (expense.amountCents <= 0) return 'Amount must be greater than zero.';
   if (!expense.payerId) return 'Pick who paid.';
   if (expense.participantIds.length === 0) return 'Pick at least one person to split between.';
+  // The UI uses checkboxes so this cannot happen through the interface, but the
+  // function must be safe on its own terms - a repeated id would double-charge.
+  if (new Set(expense.participantIds).size !== expense.participantIds.length) {
+    return 'The same person is listed twice in this split.';
+  }
 
   if (expense.mode === 'exact') {
     const sum = expense.participantIds.reduce((a, id) => a + (expense.exactShares[id] ?? 0), 0);
