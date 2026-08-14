@@ -77,10 +77,19 @@ export function greedySettle(entries: { id: string; balance: number }[]): Transf
  *
  * Finding the true minimum is NP-hard: it reduces to set-partition, because any
  * subgroup whose balances cancel can settle internally and each such subgroup
- * found saves a transaction. So this brute-forces it - settle the first
- * non-zero person against each possible counterparty in turn, recurse, and keep
- * the shortest chain found. Branch-and-bound pruning keeps it practical for the
+ * found saves a transaction. So this brute-forces it - pair the first non-zero
+ * person against each possible counterparty in turn, recurse, and keep the
+ * shortest plan found. Branch-and-bound pruning keeps it practical for the
  * group sizes this app realistically sees.
+ *
+ * Every transfer is capped at min(what the debtor owes, what the creditor is
+ * owed), so nobody is ever asked to front more than their own debt and no money
+ * circulates - total cash moved is exactly the sum of the debts. This costs
+ * nothing in transaction count: the minimum is n minus the number of disjoint
+ * cancelling subgroups, and inside a subgroup of size k you can always reach
+ * k-1 transfers with capped payments alone. Without the cap the search can
+ * return a chain like "Bob pays 9,000, then gets 6,000 back" - the same number
+ * of transfers, but a needlessly painful way to settle a 3,000 debt.
  */
 export function optimalSettle(entries: { id: string; balance: number }[]): Transfer[] {
   const ids = entries.map((e) => e.id);
@@ -107,23 +116,29 @@ export function optimalSettle(entries: { id: string; balance: number }[]): Trans
       // Only settle against someone on the opposite side of the ledger.
       if (balances[i] * balances[j] >= 0) continue;
 
-      const owed = balances[i];
-      const debtorFirst = owed < 0;
+      // Capped at whichever side runs out first, so neither party overpays.
+      const amount = Math.min(Math.abs(balances[i]), Math.abs(balances[j]));
+      const iIsDebtor = balances[i] < 0;
       current.push({
-        fromId: debtorFirst ? ids[i] : ids[j],
-        toId: debtorFirst ? ids[j] : ids[i],
-        amountCents: Math.abs(owed),
+        fromId: iIsDebtor ? ids[i] : ids[j],
+        toId: iIsDebtor ? ids[j] : ids[i],
+        amountCents: amount,
       });
 
-      // Push person i's whole balance onto j, zeroing i in a single transfer.
-      balances[j] += owed;
-      balances[i] = 0;
+      const savedI = balances[i];
+      const savedJ = balances[j];
+      // Both parties move toward zero, and at least one of them reaches it.
+      balances[i] += iIsDebtor ? amount : -amount;
+      balances[j] += iIsDebtor ? -amount : amount;
 
-      search(i + 1);
+      // i may still be non-zero if j was the smaller side, so re-examine i
+      // rather than moving on. Progress is still guaranteed - every transfer
+      // settles at least one person, so the recursion cannot run away.
+      search(i);
 
       // Undo, so the next candidate j starts from a clean slate.
-      balances[i] = owed;
-      balances[j] -= owed;
+      balances[i] = savedI;
+      balances[j] = savedJ;
       current.pop();
     }
   };

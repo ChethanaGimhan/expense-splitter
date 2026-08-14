@@ -158,6 +158,41 @@ describe('settle-up algorithms', () => {
     expect(transfers[0]).toEqual({ fromId: 'a', toId: 'b', amountCents: 1_000 });
   });
 
+  it('never asks anyone to front more than they owe', () => {
+    // One creditor, three equal debtors. A chain (Bob pays 9,000, gets 6,000
+    // back) settles this in three transfers too, but makes Bob move 9,000 to
+    // clear a 3,000 debt. Everyone should just pay the creditor directly.
+    const net = { alice: 900_000, bob: -300_000, carol: -300_000, dave: -300_000 };
+    const transfers = settleUp(net);
+
+    expect(transfers).toHaveLength(3);
+
+    const paidBy: Record<string, number> = {};
+    for (const t of transfers) paidBy[t.fromId] = (paidBy[t.fromId] ?? 0) + t.amountCents;
+    expect(paidBy).toEqual({ bob: 300_000, carol: 300_000, dave: 300_000 });
+
+    // Nobody receives money they were not owed either.
+    expect(transfers.every((t) => t.toId === 'alice')).toBe(true);
+  });
+
+  it('moves exactly the money that is owed, never more', () => {
+    const net = { a: 566_667, b: -933_333, c: 700_000, d: -333_334 };
+    const moved = settleUp(net).reduce((sum, t) => sum + t.amountCents, 0);
+    const owed = Object.values(net).filter((v) => v > 0).reduce((a, b) => a + b, 0);
+    expect(moved).toBe(owed);
+  });
+
+  it('stays fast at the exhaustive-search limit', () => {
+    const net: Record<string, number> = {};
+    for (let i = 0; i < 6; i++) net[`debtor${i}`] = -(i + 1) * 1_000;
+    for (let i = 0; i < 6; i++) net[`creditor${i}`] = (i + 1) * 1_000;
+
+    const started = Date.now();
+    const transfers = settleUp(net);
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(Object.values(applyTransfers(net, transfers)).every((v) => v === 0)).toBe(true);
+  });
+
   it('never needs more than n-1 transfers, and optimal never beats out greedy', () => {
     const cases: Record<string, number>[] = [
       { a: -100, b: -200, c: 300 },
