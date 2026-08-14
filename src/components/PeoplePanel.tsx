@@ -5,11 +5,21 @@ interface Props {
   people: Person[];
   /** Ids that appear in at least one expense, as payer or participant. */
   referencedIds: Set<string>;
+  /** False when there is nothing to clear, so the button stays hidden. */
+  canStartOver: boolean;
   onAdd: (name: string) => void;
   onRemove: (id: string) => void;
+  onStartOver: () => void;
 }
 
-export default function PeoplePanel({ people, referencedIds, onAdd, onRemove }: Props) {
+export default function PeoplePanel({
+  people,
+  referencedIds,
+  canStartOver,
+  onAdd,
+  onRemove,
+  onStartOver,
+}: Props) {
   const [name, setName] = useState('');
 
   const submit = (e: FormEvent) => {
@@ -22,7 +32,14 @@ export default function PeoplePanel({ people, referencedIds, onAdd, onRemove }: 
 
   return (
     <section className="card">
-      <h2>People</h2>
+      <div className="card-head">
+        <h2>People</h2>
+        {canStartOver && (
+          <button type="button" className="link danger" onClick={onStartOver}>
+            Start over
+          </button>
+        )}
+      </div>
 
       <form className="row" onSubmit={submit}>
         <div style={{ flex: 1 }}>

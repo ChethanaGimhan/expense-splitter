@@ -67,6 +67,22 @@ body {
   color: rgba(255, 255, 255, 0.75);
 }
 
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.card-head h2 {
+  margin: 0;
+}
+
+button.danger {
+  color: var(--owes);
+}
+
 .currency-pill {
   font-size: 12px;
   font-weight: 600;

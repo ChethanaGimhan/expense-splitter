@@ -5,7 +5,7 @@ import ExpenseList from './components/ExpenseList';
 import BalancesPanel from './components/BalancesPanel';
 import SettleUpPanel from './components/SettleUpPanel';
 import { netBalances, settleUp } from './lib/balances';
-import { loadState, saveState, newId } from './lib/storage';
+import { loadState, saveState, newId, emptyState } from './lib/storage';
 import type { AppState, Expense } from './lib/types';
 
 export default function App() {
@@ -59,7 +59,16 @@ export default function App() {
     if (editingId === id) setEditingId(null);
   };
 
+  // Everything is persisted, so without this the only way to clear old data is
+  // through devtools. Confirmed first, since there is no undo.
+  const startOver = () => {
+    if (!window.confirm('Remove everyone and every expense? This cannot be undone.')) return;
+    setState(emptyState);
+    setEditingId(null);
+  };
+
   const editing = state.expenses.find((e) => e.id === editingId) ?? null;
+  const hasData = state.people.length > 0 || state.expenses.length > 0;
 
   return (
     <div className="app">
@@ -85,8 +94,10 @@ export default function App() {
           <PeoplePanel
             people={state.people}
             referencedIds={referencedIds}
+            canStartOver={hasData}
             onAdd={addPerson}
             onRemove={removePerson}
+            onStartOver={startOver}
           />
           <ExpenseForm
             people={state.people}
