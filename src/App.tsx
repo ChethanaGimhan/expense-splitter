@@ -11,6 +11,9 @@ import type { AppState, Expense } from './lib/types';
 export default function App() {
   const [state, setState] = useState<AppState>(loadState);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Bumped on every Edit click so the form can scroll itself back into view
+  // even when the same expense is clicked twice.
+  const [editRequest, setEditRequest] = useState(0);
 
   // Single write point for persistence: any change to people or expenses is
   // saved, so no individual handler has to remember to do it.
@@ -78,6 +81,7 @@ export default function App() {
           <ExpenseForm
             people={state.people}
             editing={editing}
+            editRequest={editRequest}
             onSave={saveExpense}
             onCancelEdit={() => setEditingId(null)}
           />
@@ -93,7 +97,10 @@ export default function App() {
         expenses={state.expenses}
         people={state.people}
         editingId={editingId}
-        onEdit={(e) => setEditingId(e.id)}
+        onEdit={(e) => {
+          setEditingId(e.id);
+          setEditRequest((n) => n + 1);
+        }}
         onDelete={deleteExpense}
       />
     </div>

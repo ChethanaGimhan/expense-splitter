@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { parseRupees, formatLKR, centsToInput } from '../lib/money';
 import { validateExpense } from '../lib/split';
 import { newId } from '../lib/storage';
@@ -8,11 +8,19 @@ interface Props {
   people: Person[];
   /** When set, the form edits this expense instead of creating a new one. */
   editing: Expense | null;
+  /** Increments on every Edit click, including repeat clicks on the same row. */
+  editRequest: number;
   onSave: (expense: Expense) => void;
   onCancelEdit: () => void;
 }
 
-export default function ExpenseForm({ people, editing, onSave, onCancelEdit }: Props) {
+export default function ExpenseForm({
+  people,
+  editing,
+  editRequest,
+  onSave,
+  onCancelEdit,
+}: Props) {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [payerId, setPayerId] = useState('');
@@ -22,6 +30,8 @@ export default function ExpenseForm({ people, editing, onSave, onCancelEdit }: P
   // doesn't get parsed into something surprising.
   const [exactInputs, setExactInputs] = useState<Record<string, string>>({});
   const [attempted, setAttempted] = useState(false);
+  const formRef = useRef<HTMLElement>(null);
+  const descriptionRef = useRef<HTMLInputElement>(null);
 
   const reset = () => {
     setDescription('');
@@ -52,6 +62,21 @@ export default function ExpenseForm({ people, editing, onSave, onCancelEdit }: P
     setAttempted(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, people.length]);
+
+  /**
+   * The expense list sits below the form, so without this the page looks like
+   * nothing happened when Edit is clicked. This is keyed on the click counter
+   * rather than on `editing`, so clicking Edit again on the row already being
+   * edited still brings you back up to the form - the id has not changed, so
+   * nothing else would have re-fired. Deliberately does not re-populate the
+   * fields, which would throw away whatever you had already typed.
+   */
+  useEffect(() => {
+    if (!editing) return;
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    descriptionRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editRequest]);
 
   const toggleParticipant = (id: string) => {
     setParticipantIds((current) =>
@@ -108,14 +133,17 @@ export default function ExpenseForm({ people, editing, onSave, onCancelEdit }: P
   }
 
   return (
-    <section className="card">
-      <h2>{editing ? 'Edit expense' : 'Add an expense'}</h2>
+    <section className={`card ${editing ? 'editing' : ''}`} ref={formRef}>
+      <h2>
+        {editing ? `Editing "${editing.description}"` : 'Add an expense'}
+      </h2>
 
       <form onSubmit={submit}>
         <div className="field">
           <label htmlFor="desc">Description</label>
           <input
             id="desc"
+            ref={descriptionRef}
             type="text"
             value={description}
             placeholder="Dinner"
