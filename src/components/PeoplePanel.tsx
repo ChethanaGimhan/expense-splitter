@@ -21,11 +21,21 @@ export default function PeoplePanel({
   onStartOver,
 }: Props) {
   const [name, setName] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) return;
+
+    // Two people called "Alice" are distinct ids and the maths stays correct,
+    // but Settle Up would then read "Alice pays Alice" and look broken.
+    if (people.some((p) => p.name.toLowerCase() === trimmed.toLowerCase())) {
+      setError(`${trimmed} is already in this group.`);
+      return;
+    }
+
+    setError(null);
     onAdd(trimmed);
     setName('');
   };
@@ -49,13 +59,18 @@ export default function PeoplePanel({
             type="text"
             value={name}
             placeholder="e.g. Alice"
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              setError(null);
+            }}
           />
         </div>
         <button className="primary" type="submit">
           Add
         </button>
       </form>
+
+      {error && <p className="error">{error}</p>}
 
       {people.length === 0 ? (
         <p className="muted" style={{ marginTop: 12 }}>
