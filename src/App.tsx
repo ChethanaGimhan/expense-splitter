@@ -72,7 +72,9 @@ export default function App() {
           </svg>
           <div>
             <h1>Expense Splitter</h1>
-            <p className="tagline">Shared costs, sorted.</p>
+            <p className="tagline">
+              Add your group, log your costs, and find out exactly who owes whom
+            </p>
           </div>
         </div>
         <span className="currency-pill">LKR</span>
