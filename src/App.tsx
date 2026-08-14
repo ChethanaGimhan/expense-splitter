@@ -63,11 +63,19 @@ export default function App() {
 
   return (
     <div className="app">
-      <header>
-        <h1>Expense Splitter</h1>
-        <p className="subtitle">
-          Split trip costs in LKR, then settle up in the fewest payments possible.
-        </p>
+      <header className="masthead">
+        <div className="brand">
+          <svg className="mark" viewBox="0 0 40 40" aria-hidden="true">
+            <circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.5" />
+            <path d="M20 3a17 17 0 0 1 0 34Z" fill="currentColor" opacity="0.9" />
+            <path d="M20 3a17 17 0 0 0 0 34Z" fill="currentColor" opacity="0.3" />
+          </svg>
+          <div>
+            <h1>Expense Splitter</h1>
+            <p className="tagline">Shared costs, sorted.</p>
+          </div>
+        </div>
+        <span className="currency-pill">LKR</span>
       </header>
 
       <div className="grid-2">
