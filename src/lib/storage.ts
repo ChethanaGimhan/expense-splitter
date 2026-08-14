@@ -38,7 +38,16 @@ export function saveState(state: AppState): void {
   }
 }
 
-/** Stable unique ids so expenses can reference people across reloads. */
+/**
+ * Stable unique ids so expenses can reference people across reloads.
+ *
+ * `crypto` itself is absent on insecure origins - serving a build over plain
+ * http on a LAN address, for instance - so the whole object is optional-chained,
+ * not just the method.
+ */
 export function newId(): string {
-  return crypto.randomUUID?.() ?? `id-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  return (
+    globalThis.crypto?.randomUUID?.() ??
+    `id-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+  );
 }
